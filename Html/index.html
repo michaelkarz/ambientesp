@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <title>AmbientESP</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">   
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.7.0/css/bootstrap-slider.min.css"> 
+    
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>  
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.7.0/bootstrap-slider.min.js"></script>
+
+<style>
+    
+html {
+    height: 100%;
+}
+ 
+body {
+    height: 100%;
+    margin: 0;
+    background-color: black;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: white; 
+    font-size: 18px;
+}
+#HSV {
+	height: 100%;
+    border-radius: 5px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    margin-left: 8px;
+    margin-right: 8px;
+    padding: 10px;
+    background: hsla(0,0%,100%,0.1);
+}
+        
+#HV .slider-selection,
+#SV .slider-selection,
+#LV .slider-selection {
+	background: grey;
+}
+    
+
+    
+#HV .round,
+#SV .round,
+#LV .round {
+	background: brand-primary;
+    width: 35px;
+    height: 35px;
+    top: -8px;
+}
+    
+    .row {
+       margin-top: 5px; 
+    }
+    
+
+    #NachtlichtLinks {
+        background-color: mistyrose;
+    }
+    
+    #NachtlichtRechts {
+        background-color: skyblue;
+    }
+
+.slider-horizontal {width: 100% !important;}    
+    
+        
+</style>
+
+    
+</head>
+<body>
+
+<div class="container-fluid"> 
+    <div class="row" id="HSV">
+  
+ 
+ <!--<form method="post">-->
+<p>
+    Farbe <input type="text" class="span2" value="" data-slider-min="0" data-slider-max="160" data-slider-step="1" data-slider-value="30" data-slider-id="HV" id="H" data-slider-tooltip="hide" data-slider-handle="round" />
+<p>
+Sättigung <input type="text" class="span2" value="" data-slider-min="0" data-slider-max="255" data-slider-step="1" data-slider-value="125" data-slider-id="SV" id="S" data-slider-tooltip="hide" data-slider-handle="round" />
+</p>
+<p>
+Helligkeit <input type="text" class="span2" value="" data-slider-min="0" data-slider-max="255" data-slider-step="1" data-slider-value="124" data-slider-id="LV" id="V" data-slider-tooltip="hide" data-slider-handle="round" />
+</p>
+       <!-- </form>-->
+   </div> 
+ 
+    <div class="row">
+        <div class="col-sm-12">
+            Nachtlicht
+        </div>
+    </div>
+    
+<div class="row">
+    <div class="col-sm-12">
+        <div class="btn-group btn-group-justified" role="group" aria-label="Nachtlicht">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-lg" data-loading-text="an..." id="NachtlichtLinks">Left</button>
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-lg" data-loading-text="an..." id="NachtlichtRechts">Right</button>
+            </div>
+        </div>
+    </div>
+</div>
+    
+<div class="row">
+    <div class="col-sm-12">
+        Sonnen...
+    </div>
+</div>
+    
+<div class="row">
+    <div class="col-sm-12">
+        <div class="btn-group btn-group-justified" role="group" aria-label="Sonnen">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-warning btn-lg" data-loading-text="startet..." id="Sunrise">aufgang</button>
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-danger btn-lg"  data-loading-text="startet..." id="Sunset">untergang</button>
+            </div>
+        </div>
+    </div>  
+</div>
+    
+<div class="row">
+    <div class="col-sm-12">
+        Wecker
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+        <div class="input-group input-group-lg">
+              <input type="text" class="form-control" placeholder="6:50" id="wecker">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button" data-loading-text="wird gesetzt..." id="WeckerStellen">Los!</button>
+              </span>
+        </div><!-- /input-group -->
+    </div>
+ </div>
+    
+<div class="row">
+    <div class="col-sm-12">
+        <button type="button" class="btn btn-default btn-block btn-lg" data-loading-text="aus..." id="Off">Aus</button>
+    </div>
+</div>
+    
+
+    
+
+
+ </div>
+</body>
+
+<script type="text/javascript">
+ 
+var timeoutID;
+var h, s,v;
+var bTimerSet = false;
+var strPlaceHolderTime = 'z.B. "6:30" eintragen';
+    
+    
+
+var GetHSVValues = function() {
+    
+    
+    $.post( "set.php", { hsv: "?" })
+        .done(function(data) {
+        
+            h.setValue(data.h);
+            s.setValue(data.s);
+            v.setValue(data.v);
+            HSVChange();
+    })    
+
+};
+  
+    
+var HSVChange = function() {
+    
+    
+	var hue = h.getValue()/255.0*360.0;	
+	var sat = s.getValue()/255.0*100.0;	
+	var val = v.getValue()/255.0*100.0;	
+    
+    if(val.toFixed(0) > 0)
+    {
+    	$(document.body).css('background', 'linear-gradient(hsla(' + hue.toFixed(0) + ',' + sat.toFixed(0) + '%,' + '50%,' + sat.toFixed(0) /100.0 + ')' +  (val.toFixed(0)-50) + '%,black)');
+    }
+    else
+    {
+        $(document.body).css('background','black');   
+    }
+ 
+};
+    
+var HChange = function() {
+      
+    if(bTimerSet == false)
+    {
+        bTimerSet = true;
+        timeoutID = window.setTimeout(HChangeStop, 100);     
+    }
+ 
+};
+
+var SChange = function() {
+      
+    if(bTimerSet == false)
+    {
+        bTimerSet = true;
+        timeoutID = window.setTimeout(SChangeStop, 100);     
+    }
+ 
+};
+
+var VChange = function() {
+      
+    if(bTimerSet == false)
+    {
+        bTimerSet = true;
+        timeoutID = window.setTimeout(VChangeStop, 100);     
+    }
+ 
+};
+
+
+
+function HChangeStop() {
+    
+     HSVChange();
+    
+     $.post( 
+         "set.php", 
+         { hue: h.getValue() })
+     
+         .done( function(data) 
+        {
+          bTimerSet = false;
+        }); 
+    
+    
+}
+    
+    
+function SChangeStop() {
+    
+     HSVChange();
+    
+     $.post( 
+         "set.php", 
+         { sat: s.getValue() })
+     
+         .done( function(data) 
+        {
+          bTimerSet = false;
+        }); 
+        
+}
+    
+    
+function VChangeStop() {
+    
+     HSVChange();
+    
+     $.post( 
+         "set.php", 
+         { val: v.getValue() })
+     
+         .done( function(data) 
+        {
+          bTimerSet = false;
+        });
+}
+    
+    
+    
+var h =  $('#H').slider()
+		.on('change', HSVChange)
+        .on('change', HChange)
+		.data('slider');
+var s = $('#S').slider()
+		.on('change', HSVChange)
+        .on('change', SChange)
+		.data('slider');
+var v = $('#V').slider()
+		.on('change', HSVChange)
+        .on('change', VChange)
+		.data('slider');  
+    
+    
+
+
+
+$( document ).ready(function() {
+    
+
+GetHSVValues();   
+ 
+    
+$.post( "set.php", { Wecker: "?" })
+        .done(function(data) {
+            strPlaceHolderTime = "Gestellt auf " + String(data.hour) + ":" + String(data.minute) + " Uhr";
+            $("#wecker").attr("placeholder",strPlaceHolderTime); 
+        })
+       
+    
+
+           
+
+ $('body').attr('unselectable','on')
+     .css({'-moz-user-select':'-moz-none',
+           '-moz-user-select':'none',
+           '-o-user-select':'none',
+           '-khtml-user-select':'none', /* you could also put this in a class */
+           '-webkit-user-select':'none',/* and add the CSS class here instead */
+           '-ms-user-select':'none',
+           'user-select':'none'
+        }).bind('selectstart', function(){ return false; });
+
+    
+    $("#Sunrise").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { ChangeState: "Sunrise" })
+        .done(function(data) {
+          $btn.button('reset');
+        })
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+
+    $("#Sunset").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { ChangeState: "Sunset" })
+        .done(function(data) {
+          $btn.button('reset');
+        })
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+    
+    $("#Off").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { ChangeState: "Off" })
+        .done(function(data) {
+          $btn.button('reset');
+           timeoutID = window.setTimeout(GetHSVValues, 10000);
+        })
+       
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+    
+    $("#WeckerStellen").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { Wecker: $('#wecker').val() })
+        .done(function(data) {
+          $btn.button('reset');
+        })
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+        
+    $("#NachtlichtSybi").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { Nachtlicht: "Sybi" })
+        .done(function(data) {
+          $btn.button('reset');
+        })
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+    
+
+    $("#NachtlichtMichi").on('click', function(){
+       var $btn = $(this).button('loading')
+        
+       $.post( "set.php", { Nachtlicht: "Michi" })
+        .done(function(data) {
+          $btn.button('reset');
+        })
+        .fail(function(data) {
+          //$btn.button('reset');
+          //alert('Fehler: ' + data);
+        })
+    });
+    
+
+    
+});
+ </script>
+    
+</html>

@@ -1,0 +1,1 @@
+pythonw "C:\Users\krypt\Documents\Arduino\AmbientESP\HeaderGenerator.py"
